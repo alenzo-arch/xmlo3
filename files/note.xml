@@ -1,0 +1,7 @@
+<note id="1">
+    <to>Tove</to>
+    <from>Jani</from>
+        <third something="string"/>
+    <heading>Reminder</heading>
+    <body>Don't forget me this weekend!</body>
+</note>
