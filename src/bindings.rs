@@ -1,13 +1,21 @@
 use crate::parse;
+use crate::RecursiveHashMap;
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
-use pythonize::pythonize;
 use std::fs;
+
+impl IntoPy<PyObject> for RecursiveHashMap {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            Self::Map(val) => val.into_py(py),
+            Self::Value(val) => val.into_py(py),
+        }
+    }
+}
 
 #[pyfunction]
 fn parse_file_roxmltree(path: &str) -> PyResult<()> {
     let input = fs::read_to_string(path)?;
     if let Ok(doc) = roxmltree::Document::parse(&input) {
-        println!("parsed from rust");
         Ok(())
     } else {
         Err(PyErr::new::<PyRuntimeError, _>("args"))
@@ -18,7 +26,7 @@ fn parse_file_roxmltree(path: &str) -> PyResult<()> {
 fn parse_file_xmlparser(path: &str) -> PyResult<PyObject> {
     let doc = fs::read_to_string(path).unwrap();
     Python::with_gil(|py| {
-        let pyobj = pythonize(py, &parse(doc)?)?;
+        let pyobj = parse(doc)?.into_py(py);
         Ok(pyobj)
     })
 }

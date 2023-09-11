@@ -76,7 +76,6 @@ impl TokenHanlder {
         let elem = self.element_stack.pop().ok_or(Error::MalformedXml(
             "Closing element found without matching open element",
         ))?;
-        println!("{:?}", elem);
 
         let text = self.text_stack.pop();
 
@@ -149,9 +148,7 @@ impl TokenHanlder {
 pub fn parse(doc: String) -> Result<Vec<HashMap<String, RecursiveHashMap>>, Error> {
     let mut handler = TokenHanlder::new();
     for token in xmlparser::Tokenizer::from(&*doc) {
-        println!("{:?}", token);
         handler.handle_token(token)?;
-        println!("{:?}", handler.element_stack)
     }
     Ok(handler.body)
 }

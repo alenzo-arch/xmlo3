@@ -9,19 +9,19 @@ from lxml import etree, sax
 # parse_file_roxmltree("files/nasa.xml")
 # print(f"roxmltree: {perf_counter()- start}")
 
-# # xml parser
-# start = perf_counter()
-# parse_file_xmlparser("files/nasa.xml")
-# print(f"xmlparser: {perf_counter()- start}")
+# xml parser
+start = perf_counter()
+parse_file_xmlparser("files/nasa.xml")
+print(f"xmlparser: {perf_counter()- start}")
 
 
-# # xpat
-# start = perf_counter()
-# parser = ParserCreate()
-# with open("files/nasa.xml") as file:
-#     doc = file.read()
-#     parser.Parse(doc)
-# print(f"expat: {perf_counter()- start}")
+# xpat
+start = perf_counter()
+parser = ParserCreate()
+with open("files/nasa.xml") as file:
+    doc = file.read()
+    parser.Parse(doc)
+print(f"expat: {perf_counter()- start}")
 
 
 # # lxml
@@ -39,7 +39,8 @@ from lxml import etree, sax
 # print(f"lxml pull: {perf_counter()- start}")
 
 
-# xml parser
-start = perf_counter()
-parse_file_xmlparser("files/note.xml")
-print(f"xmlparser: {perf_counter()- start}")
+# # xml parser
+# start = perf_counter()
+# out = parse_file_xmlparser("files/note.xml")
+# print(out)
+# print(f"xmlparser: {perf_counter()- start}")
