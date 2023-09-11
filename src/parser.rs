@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{borrow::BorrowMut, collections::HashMap};
+use std::collections::HashMap;
 use xmlparser::{ElementEnd, Token};
 
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
@@ -48,7 +48,6 @@ impl RecursiveHashMap {
 }
 
 struct TokenHanlder {
-    data: RecursiveHashMap,
     element_stack: Vec<RecursiveHashMap>, // TODO: Combine these to Vec<(RecursiveHashMap,Vec<String>)>?
     text_stack: Vec<Vec<String>>,
     body: Vec<HashMap<String, RecursiveHashMap>>,
@@ -56,7 +55,6 @@ struct TokenHanlder {
 impl TokenHanlder {
     pub fn new() -> Self {
         Self {
-            data: RecursiveHashMap::Map(HashMap::new()),
             element_stack: Vec::new(),
             text_stack: Vec::new(),
             body: Vec::new(),
@@ -136,7 +134,7 @@ impl TokenHanlder {
         Ok(())
     }
 
-    fn handle_elem_end(&mut self, end: ElementEnd, span: &str) -> Result<(), Error> {
+    fn handle_elem_end(&mut self, end: ElementEnd, _span: &str) -> Result<(), Error> {
         match end {
             ElementEnd::Close(_prefix, local) => self.handle_close_empty(&local),
             ElementEnd::Empty => self.handle_close_empty("/>"),
@@ -146,10 +144,10 @@ impl TokenHanlder {
 
     fn handle_attribute(
         &mut self,
-        prefix: &str,
+        _prefix: &str,
         local: &str,
         value: &str,
-        span: &str,
+        _span: &str,
     ) -> Result<(), Error> {
         let mut elem = self
             .element_stack

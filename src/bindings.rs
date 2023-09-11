@@ -1,6 +1,6 @@
 use crate::parse;
 use crate::RecursiveHashMap;
-use pyo3::{exceptions::PyRuntimeError, prelude::*};
+use pyo3::prelude::*;
 use std::fs;
 
 impl IntoPy<PyObject> for RecursiveHashMap {
