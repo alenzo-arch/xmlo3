@@ -95,15 +95,14 @@ impl TokenHanlder {
                     .remove("$key")
                     .unwrap()
                     .is_value_or(Error::MalformedXml("$key must be a string"))?;
-                let updated = self
+                let mut updated = self
                     .element_stack
                     .pop()
                     .unwrap()
-                    .is_map_or(Error::MalformedXml("Cannot nest on value"))?
-                    .insert(key, RecursiveHashMap::Map(nested))
-                    .unwrap();
+                    .is_map_or(Error::MalformedXml("Cannot nest on value"))?;
 
-                self.element_stack.push(updated);
+                updated.insert(key, RecursiveHashMap::Map(nested));
+                self.element_stack.push(RecursiveHashMap::Map(updated));
             }
         }
 
