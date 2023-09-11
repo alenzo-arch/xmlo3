@@ -1,9 +1,11 @@
+
 <note id="1">
     <to>Tove</to>
     <from>Jani</from>
     <heading>Reminder</heading>
     <nest1>
-        <nest2/>
+        <nest2 attr="5"/>
+        this is after
     </nest1>
     <body>Don't forget me this weekend!</body>
 </note>

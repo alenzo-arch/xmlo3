@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{borrow::BorrowMut, collections::HashMap};
 use xmlparser::{ElementEnd, Token};
 
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
@@ -77,14 +77,26 @@ impl TokenHanlder {
             "Closing element found without matching open element",
         ))?;
 
-        let text = self.text_stack.pop();
+        let text_vec = self.text_stack.pop().unwrap();
+        let text = text_vec.join("|");
 
         let stack_depth = self.element_stack.len();
         match stack_depth {
             0 => {
                 // root element, push to body
-                let root =
+                let mut root =
                     elem.is_map_or(Error::MalformedXml("Root element cannot be a single value"))?;
+                if self.body.is_empty() {
+                    // xml dec not present, so we add a hash map for the root key
+                    let root_key = root
+                        .remove("$key")
+                        .ok_or(Error::MalformedXml("Root element must have a key"))?
+                        .is_value_or(Error::MalformedXml("Root key must be a string"))?;
+                    self.body.push(HashMap::from([(
+                        String::from("rootTagName"),
+                        RecursiveHashMap::Value(root_key),
+                    )]))
+                }
                 self.body.push(root)
             }
             _ => {
@@ -94,13 +106,29 @@ impl TokenHanlder {
                     .remove("$key")
                     .unwrap()
                     .is_value_or(Error::MalformedXml("$key must be a string"))?;
+
+                if text.is_empty() && nested.is_empty() {
+                    // text is empty and nested is empty (skip)
+                    return Ok(());
+                }
+
                 let mut updated = self
                     .element_stack
                     .pop()
                     .unwrap()
                     .is_map_or(Error::MalformedXml("Cannot nest on value"))?;
 
-                updated.insert(key, RecursiveHashMap::Map(nested));
+                if !text.is_empty() && nested.is_empty() {
+                    // We have text and nested is  empty (append text as value to updated)
+                    updated.insert(key, RecursiveHashMap::Value(text));
+                } else if !text.is_empty() && !nested.is_empty() {
+                    // we have text and nested is not empty (insert text as ..cdata in nested before updating)
+                    nested.insert(String::from("..cdata"), RecursiveHashMap::Value(text));
+                    updated.insert(key, RecursiveHashMap::Map(nested));
+                } else if text.is_empty() && !nested.is_empty() {
+                    updated.insert(key, RecursiveHashMap::Map(nested));
+                }
+
                 self.element_stack.push(RecursiveHashMap::Map(updated));
             }
         }
@@ -108,15 +136,40 @@ impl TokenHanlder {
         Ok(())
     }
 
-    fn handle_elem_end(&mut self, end: ElementEnd, span: &str) {
+    fn handle_elem_end(&mut self, end: ElementEnd, span: &str) -> Result<(), Error> {
         match end {
             ElementEnd::Close(_prefix, local) => self.handle_close_empty(&local),
             ElementEnd::Empty => self.handle_close_empty("/>"),
             ElementEnd::Open => Ok(()), // don't need to do anything if left open
-        };
+        }
+    }
+
+    fn handle_attribute(
+        &mut self,
+        prefix: &str,
+        local: &str,
+        value: &str,
+        span: &str,
+    ) -> Result<(), Error> {
+        let mut elem = self
+            .element_stack
+            .pop()
+            .ok_or(Error::MalformedXml(
+                "Received attributes outside of an open tag.",
+            ))?
+            .is_map_or(Error::MalformedXml("Cannot apply attributes to value"))?;
+        let key = [".", local].join("");
+
+        elem.insert(key, RecursiveHashMap::Value(String::from(value.trim())));
+        self.element_stack.push(RecursiveHashMap::Map(elem));
+        Ok(())
     }
 
     fn handle_text(&mut self, text: &str) {
+        let text = text.trim();
+        if text.is_empty() {
+            return;
+        }
         match self.text_stack.last_mut() {
             Some(last) => last.push(String::from(text)),
             None => {}
@@ -136,8 +189,8 @@ impl TokenHanlder {
                 local,
                 value,
                 span,
-            } => (),
-            Token::ElementEnd { end, span } => self.handle_elem_end(end, &span),
+            } => self.handle_attribute(&prefix, &local, &value, &span)?,
+            Token::ElementEnd { end, span } => self.handle_elem_end(end, &span)?,
             Token::Text { text } => self.handle_text(&text),
             _ => (),
         };

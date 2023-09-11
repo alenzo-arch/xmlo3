@@ -13,17 +13,7 @@ impl IntoPy<PyObject> for RecursiveHashMap {
 }
 
 #[pyfunction]
-fn parse_file_roxmltree(path: &str) -> PyResult<()> {
-    let input = fs::read_to_string(path)?;
-    if let Ok(doc) = roxmltree::Document::parse(&input) {
-        Ok(())
-    } else {
-        Err(PyErr::new::<PyRuntimeError, _>("args"))
-    }
-}
-
-#[pyfunction]
-fn parse_file_xmlparser(path: &str) -> PyResult<PyObject> {
+fn parse_file(path: &str) -> PyResult<PyObject> {
     let doc = fs::read_to_string(path).unwrap();
     Python::with_gil(|py| {
         let pyobj = parse(doc)?.into_py(py);
@@ -31,10 +21,18 @@ fn parse_file_xmlparser(path: &str) -> PyResult<PyObject> {
     })
 }
 
+#[pyfunction]
+fn parse_string(input: String) -> PyResult<PyObject> {
+    Python::with_gil(|py| {
+        let pyobj = parse(input)?.into_py(py);
+        Ok(pyobj)
+    })
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn xmlo3(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse_file_roxmltree, m)?)?;
-    m.add_function(wrap_pyfunction!(parse_file_xmlparser, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_file, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_string, m)?)?;
     Ok(())
 }

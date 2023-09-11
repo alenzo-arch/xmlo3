@@ -1,8 +1,8 @@
-from xmlo3 import parse_file_roxmltree, parse_file_xmlparser
 from time import perf_counter
 from xml.parsers.expat import ParserCreate
-from lxml import etree, sax
 
+from archfx.s1.core.xml_parser import parse_xml
+from xmlo3 import parse_file, parse_string
 
 # # roxmltree
 # start = perf_counter()
@@ -11,18 +11,29 @@ from lxml import etree, sax
 
 # xml parser
 start = perf_counter()
-parse_file_xmlparser("files/nasa.xml")
-print(f"xmlparser: {perf_counter()- start}")
+out = parse_file("files/nasa.xml")
+print(f"parse_file: {perf_counter()- start}")
 
+
+start = perf_counter()
+parser = ParserCreate()
+with open("files/nasa.xml") as file:
+    out = parse_string(file.read())
+print(f"parse_string: {perf_counter()- start}")
 
 # xpat
 start = perf_counter()
 parser = ParserCreate()
 with open("files/nasa.xml") as file:
-    doc = file.read()
-    parser.Parse(doc)
+    out = parse_xml(file.read())
 print(f"expat: {perf_counter()- start}")
 
+
+with open("files/note.xml") as file:
+    input = file.read()
+    rust = parse_string(input)
+    python = parse_xml(input)
+    assert rust == python
 
 # # lxml
 # start = perf_counter()
