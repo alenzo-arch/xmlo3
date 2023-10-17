@@ -1,0 +1,6 @@
+from typing import Union
+
+RecursiveDict = Union[str, dict[str, "RecursiveDict"]]
+
+def parse_file(path: str) -> list[dict[str, RecursiveDict]]: ...
+def parse_string(xml_string: str) -> list[dict[str, RecursiveDict]]: ...
